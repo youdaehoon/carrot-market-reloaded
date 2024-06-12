@@ -30,7 +30,7 @@ async function getGithubProfile(access_token: string) {
   const userProfileResponse = await fetch("https://api.github.com/user", {
     method: "GET",
     headers: {
-      Authorization: `Bearer ${access_token}aa`,
+      Authorization: `Bearer ${access_token}`,
     },
     cache: "no-cache",
   });

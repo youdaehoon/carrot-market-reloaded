@@ -1,5 +1,5 @@
 "use client";
-import FormButton from "@/components/button";
+import Button from "@/components/button";
 import FormInput from "@/components/input";
 import SocialLogin from "@/components/social-login";
 import { useFormState } from "react-dom";
@@ -32,7 +32,7 @@ export default function Login() {
           errors={state?.fieldErrors.password}
 
         />
-        <FormButton text="Log in" />
+        <Button text="Log in" />
       </form>
       <SocialLogin />
     </div>

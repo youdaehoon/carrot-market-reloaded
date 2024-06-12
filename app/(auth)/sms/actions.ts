@@ -10,6 +10,7 @@ import { login } from "@/lib/utils";
 
 interface ActionState {
   token: boolean;
+  phone?: string;
 }
 
 async function getToken() {
@@ -104,7 +105,7 @@ export async function smsLogin(prevState: ActionState, formData: FormData) {
         to: process.env.MY_PHONE_NUMBER!,
       });
 
-      return { token: true };
+      return { token: true, phone: result.data };
     }
   } else {
     const result = await tokenSchema.spa(token);
@@ -119,6 +120,9 @@ export async function smsLogin(prevState: ActionState, formData: FormData) {
       const token = await db.sMSToken.findUnique({
         where: {
           token: result.data.toString(),
+          user: {
+            phone: prevState.phone,
+          },
         },
         select: {
           id: true,
