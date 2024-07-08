@@ -12,6 +12,8 @@ import {
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
 import LikeButton from "@/components/like-button";
+import PostComment from "@/components/post-comment";
+import { Prisma } from "@prisma/client";
 
 async function getPost(id: number) {
   try {
@@ -66,6 +68,32 @@ const getCachedLikeStatus = async (postId: number) => {
   console.log("likeStatus hit!");
   return cachedOperation(postId, session.id!);
 };
+
+async function getComments(postId: number) {
+  try {
+    const comments = await db.comment.findMany({
+      where: { postId },
+      select: {
+        created_at:true,
+        id:true,
+        payload:true,
+        user: {
+          select: {
+            avatar: true,
+            username: true,
+          },
+        },
+      },
+    });
+
+    return comments;
+  } catch (error) {
+    return [];
+  }
+}
+
+export type InitialComments = Prisma.PromiseReturnType<typeof getComments>;
+
 export default async function PostDetail({
   params,
 }: {
@@ -77,65 +105,41 @@ export default async function PostDetail({
   const post = await getCachedPost(id);
   if (!post) return notFound();
 
-  const likePost = async () => {
-    "use server";
-    await new Promise((r) => setTimeout(r, 10000));
-    console.log("like");
-    const session = await getSession();
-    console.log({ postId: id, userId: session.id! });
-    try {
-      await db.like.create({
-        data: { postId: id, userId: session.id! },
-      });
-      revalidateTag(`like-status-${id}`);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-  const dislikePost = async () => {
-    "use server";
-    const session = await getSession();
-
-    try {
-      await db.like.delete({
-        where: {
-          id: { postId: id, userId: session.id! },
-        },
-      });
-
-      revalidateTag(`like-status-${id}`);
-    } catch (error) {}
-  };
+  const comments = await getComments(id);
 
   const { isLiked, likeCount } = await getCachedLikeStatus(id);
 
   return (
-    <div className="p-5 text-white">
-      <div className="flex items-center gap-2 mb-2">
-        <Image
-          width={28}
-          height={28}
-          className="size-7 rounded-full"
-          src={post.user.avatar || "/cofee.jpg"}
-          alt={post.user.username}
-        />
-        <div>
-          <span className="text-sm font-semibold">{post.user.username}</span>
-          <div className="text-xs">
-            <span>{formatToTimeAgo(post.created_at.toString())}</span>
+    <div>
+      <div className="p-5 text-white">
+        <div className="flex items-center gap-2 mb-2">
+          <Image
+            width={28}
+            height={28}
+            className="size-7 rounded-full"
+            src={post.user.avatar || "/cofee.jpg"}
+            alt={post.user.username}
+          />
+          <div>
+            <span className="text-sm font-semibold">{post.user.username}</span>
+            <div className="text-xs">
+              <span>{formatToTimeAgo(post.created_at.toString())}</span>
+            </div>
           </div>
         </div>
-      </div>
-      <h2 className="text-lg font-semibold">{post.title}</h2>
-      <p className="mb-5">{post.description}</p>
-      <div className="flex flex-col gap-5 items-start">
-        <div className="flex items-center gap-2 text-neutral-400 text-sm">
-          <EyeIcon className="size-5" />
-          <span>조회 {post.views}</span>
-        </div>
+        <h2 className="text-lg font-semibold">{post.title}</h2>
+        <p className="mb-5">{post.description}</p>
+        <div className="flex flex-col gap-5 items-start">
+          <div className="flex items-center gap-2 text-neutral-400 text-sm">
+            <EyeIcon className="size-5" />
+            <span>조회 {post.views}</span>
+          </div>
 
-        <LikeButton isLiked={isLiked} likeCount={likeCount} postId={id} />
+          <LikeButton isLiked={isLiked} likeCount={likeCount} postId={id} />
+        </div>
       </div>
+
+      <PostComment initialComments={comments} postId={id}/>
     </div>
   );
 }
