@@ -11,6 +11,7 @@ import { login } from "@/lib/utils";
 interface ActionState {
   token: boolean;
   phone?: string;
+  error?:string[]
 }
 
 async function getToken() {
@@ -55,7 +56,7 @@ const tokenSchema = z.coerce
   .min(100000)
   .max(999999)
   .refine(tokenExists, "This token does not exist.");
-export async function smsLogin(prevState: ActionState, formData: FormData) {
+export async function smsLogin(prevState: any, formData: FormData) {
   const phone = formData.get("phone");
   const token = formData.get("token");
 
@@ -137,6 +138,7 @@ export async function smsLogin(prevState: ActionState, formData: FormData) {
           id: token!.id,
         },
       });
+      
       redirect("/profile");
     }
   }
